@@ -1,32 +1,149 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>분석 중 - 말만해요</title>
-    <style>
-        body { margin:0; background:#f8fafc; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; font-family:sans-serif; }
-        .loader { border: 6px solid #f3f3f3; border-top: 6px solid #2563eb; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h2 { color: #1e293b; font-weight: 800; }
-    </style>
-</head>
-<body>
-    <div class="loader"></div>
-    <h2>AI가 내용을 분석 중입니다...</h2>
-    <p>잠시만 기다려 주세요.</p>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<title>확인 및 보내기 - 말만해요</title>
 
-    <script>
-        window.onload = () => {
-            const data = localStorage.getItem('rawTranscript');
-            if(!data) {
-                alert("녹음된 데이터가 없습니다. 다시 시도해주세요.");
-                location.href = "./home.html";
-            } else {
-                // ✅ 3P.html로 이동하여 카드뉴스 생성 시작
-                setTimeout(() => { location.href = "./3P.html"; }, 1500);
-            }
-        };
-    </script>
+<style>
+:root { 
+    --bg:#f8fafc; --primary:#2563eb; --success:#10b981; --text:#0f172a; 
+}
+* { box-sizing:border-box; font-family:'Pretendard',system-ui,sans-serif; }
+
+body {
+    margin: 0; background: var(--bg);
+    display: flex; justify-content: center; min-height: 100vh;
+}
+
+.container{ width:100%; max-width:480px; background:#fff; min-height:100vh; display:flex; flex-direction:column; }
+
+/* 상단바 디자인 유지 */
+.topbar{ padding:16px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; }
+.topbar-title{ font-size:26px; font-weight:900; color:var(--primary); }
+.help-btn { background: #eff6ff; border: 2px solid var(--primary); border-radius: 12px; color: var(--primary); padding: 8px 16px; font-size: 18px; font-weight: 800; }
+
+/* 단계 표시 유지 */
+.stepper{ display:flex; justify-content:space-around; padding:14px; border-bottom:1px solid #f1f5f9; }
+.step{ display:flex; flex-direction:column; align-items:center; font-size:18px; font-weight:800; opacity:.3; }
+.step.active{ opacity:1; color:var(--primary); }
+.step-icon{ width:40px; height:40px; border-radius:50%; background:#e2e8f0; display:grid; place-items:center; margin-bottom:4px; }
+.step.active .step-icon{ background:var(--primary); color:#fff; }
+
+.content{ padding:20px; flex:1; text-align:center; }
+.guide-msg{ font-size:28px; font-weight:900; margin-bottom:20px; }
+
+/* 이미지 박스 디자인 유지 */
+.image-preview{
+    width:100%; aspect-ratio:1/1; background:#f1f5f9; border-radius:20px;
+    margin-bottom:20px; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    border:3px dashed #cbd5e1;
+}
+.image-preview img { width:100%; height:100%; object-fit:cover; }
+
+.result-text-card {
+    background:#f8fafc; border-radius:18px; padding:20px; text-align:left;
+    margin-bottom:20px; border:2px solid #e2e8f0;
+}
+.result-text-card b { display:block; font-size:20px; margin-bottom:10px; color:var(--primary); }
+.result-text-card p { font-size:17px; line-height:1.6; color:#334155; margin:0; }
+
+/* 버튼 그룹 디자인 유지 */
+.btn-group{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.btn{ 
+    padding:20px; border-radius:16px; border:none; font-size:20px; font-weight:800; 
+    cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; 
+}
+.btn-next{ grid-column:span 2; background:var(--success); color:#fff; font-size:26px; padding:24px; }
+.btn-secondary{ background:#e2e8f0; color:#475569; }
+.btn-share{ background:var(--primary); color:#fff; }
+.btn small{ font-size:15px; opacity:.8; background:rgba(0,0,0,.1); padding:2px 8px; border-radius:6px; }
+
+.loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
+@keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } }
+</style>
+</head>
+
+<body>
+<div class="container">
+    <header class="topbar">
+        <div class="topbar-title">말만해요</div>
+        <button class="help-btn">도움말 ▾</button>
+    </header>
+
+    <nav class="stepper">
+        <div class="step"><div class="step-icon">1</div>말하기</div>
+        <div class="step"><div class="step-icon">2</div>선택</div>
+        <div class="step active"><div class="step-icon">3</div>확인/보내기</div>
+    </nav>
+
+    <main class="content">
+        <div class="guide-msg">AI 카드뉴스가 완성됐어요!</div>
+
+        <div class="image-preview" id="imageBox">
+            <div class="loading-dots" style="font-weight:800; color:#94a3b8;">디자인 생성 중</div>
+        </div>
+
+        <div class="result-text-card" id="textBox">
+            <p style="color:#cbd5e1; text-align:center;">텍스트를 불러오고 있습니다...</p>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-share" onclick="location.href='./sns.html'"><div>📤 바로 공유</div><small>Alt + 4</small></button>
+            <button class="btn btn-secondary" onclick="location.href='./home.html'"><div>↻ 다시 하기</div><small>Alt + 1</small></button>
+            <button class="btn btn-next" onclick="alert('저장되었습니다!')">내 폰에 저장하기</button>
+        </div>
+    </main>
+</div>
+
+<script>
+window.onload = async () => {
+    // ✅ 데이터 불러오기
+    const transcript = localStorage.getItem('rawTranscript');
+    if (!transcript) {
+        alert("녹음된 내용이 없습니다.");
+        location.href = "./home.html";
+        return;
+    }
+
+    try {
+        // ✅ API 호출
+        const response = await fetch('/api/generate-post', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            // ✅ 이미지 표시
+            document.getElementById('imageBox').innerHTML = `<img src="${data.image.data_url}" alt="AI Card News">`;
+            
+            // ✅ 텍스트 표시
+            document.getElementById('textBox').innerHTML = `
+                <b>${data.post.title}</b>
+                <p>${data.post.content}</p>
+                <div style="margin-top:15px; color:var(--primary); font-weight:700;">
+                    ${data.post.hashtags.join(' ')}
+                </div>
+            `;
+        } else {
+            throw new Error("생성 실패");
+        }
+    } catch (err) {
+        document.getElementById('imageBox').innerHTML = "<p>이미지 생성에 실패했습니다.</p>";
+        document.getElementById('textBox').innerHTML = "<p>다시 시도해 주세요.</p>";
+    }
+};
+
+// Alt 단축키 기능 유지
+window.onkeydown = (e) => {
+    if(e.altKey) {
+        const map = { "1":"./home.html", "4":"./sns.html", "0":"./index.html" };
+        if(map[e.key]) location.href = map[e.key];
+    }
+};
+</script>
 </body>
 </html>
