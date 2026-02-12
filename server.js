@@ -9,51 +9,46 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-// 이미지 데이터 전송을 위해 용량 제한을 늘립니다.
 app.use(express.json({ limit: "10mb" }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ OpenAI Client 설정
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ CORS 설정
 app.use(cors());
 
-// ✅ 정적 폴더 경로: 현재 위치(Root)로 설정
-const STATIC_DIR = __dirname; 
+// ✅ 정적 폴더 경로 설정
+const STATIC_DIR = __dirname;
 app.use(express.static(STATIC_DIR));
 
-// ✅ 메인 페이지 라우트: 접속 시 preview.html을 먼저 보여줌
-app.get("/", (req, res) => {
-  const previewPath = path.join(STATIC_DIR, "preview.html");
-  if (fs.existsSync(previewPath)) {
-    return res.sendFile(previewPath);
+// ✅ [경로 수정] 모든 .html 요청을 자동으로 처리
+app.get("/:page.html", (req, res) => {
+  const fileName = `${req.params.page}.html`;
+  const filePath = path.join(STATIC_DIR, fileName);
+  
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send(`${fileName} 파일을 찾을 수 없습니다.`);
   }
-  res.status(404).send("첫 화면(preview.html)을 찾을 수 없습니다.");
 });
 
-// ✅ 개별 HTML 페이지들에 대한 경로 명시
-app.get("/home.html", (req, res) => res.sendFile(path.join(STATIC_DIR, "home.html")));
-app.get("/index.html", (req, res) => res.sendFile(path.join(STATIC_DIR, "index.html")));
-app.get("/2P.html", (req, res) => res.sendFile(path.join(STATIC_DIR, "2P.html")));
-app.get("/sns.html", (req, res) => res.sendFile(path.join(STATIC_DIR, "sns.html")));
+// ✅ 첫 화면 설정 (접속하자마자 index.html(=원래 preview) 실행)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(STATIC_DIR, "index.html"));
+});
 
-// ✅ 게시물 및 카드뉴스 이미지 생성 API
+// ✅ [프롬프트 수정] 카드뉴스 스타일 이미지 생성
 app.post("/api/generate-post", async (req, res) => {
   try {
     const { transcript } = req.body;
     if (!transcript) return res.status(400).json({ ok: false, error: "내용이 없습니다." });
 
-    // 1. 텍스트 콘텐츠 생성 (GPT-4o)
     const completion = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { 
-          role: "system", 
-          content: "너는 SNS 카드뉴스 전문가야. 사용자의 입력 내용을 바탕으로 블로그나 인스타그램에 올리기 좋은 카드뉴스용 제목과 본문 내용을 JSON 형식으로 만들어줘. 구조: { \"title\": \"...\", \"content\": \"...\", \"hashtags\": [\"#...\", \"#...\"] }" 
-        },
+        { role: "system", content: "너는 SNS 게시물 작성자야. JSON 형식으로 제목(title), 내용(content), 해시태그(hashtags) 배열을 만들어줘." },
         { role: "user", content: transcript }
       ],
       response_format: { type: "json_object" }
@@ -61,21 +56,20 @@ app.post("/api/generate-post", async (req, res) => {
 
     const postData = JSON.parse(completion.choices[0].message.content);
 
-    // 2. 카드뉴스 스타일 이미지 생성 (DALL-E 3)
-    // 사용자님이 주신 참고 예시(깔끔한 배경, 메모지 스타일, 인포그래픽)를 반영한 프롬프트입니다.
+    // 🎨 DALL-E 3 프롬프트 강화 (카드뉴스 디자인 적용)
     const image = await client.images.generate({
       model: "dall-e-3",
       prompt: `
-        Professional "Card News" design for Instagram. 
-        Theme: ${postData.title}.
-        Visual Style: 
-        - Clean, minimalist flat design with a soft pastel color scheme (mint and white).
-        - A central white rectangular area resembling a clean memo paper or a notepad.
-        - High-quality 2D vector illustrations and icons related to the theme.
-        - No realistic photos, no human faces.
-        - The layout should have a clear space at the top for a title and a structured body area with bullet points.
-        - Overall feel should be modern, organized, and academic yet friendly, exactly like a professional infographic card.
-        - Aspect ratio 1:1.
+        A professional 'Card News' infographic for Instagram.
+        Main Topic: "${postData.title}".
+        Style: Modern, minimalist, and clean flat design. 
+        Layout: 
+        1. Soft pastel background (light mint or sky blue).
+        2. A clear central area for text that looks like a clean 'notepaper' or 'memo card'.
+        3. Cute 3D isometric icons representing AI and communication around the card.
+        4. High-quality graphic design with no realistic humans.
+        5. Perfect 1:1 square ratio.
+        6. The vibe should be bright, friendly, and professional.
       `,
       size: "1024x1024",
       response_format: "b64_json"
@@ -87,13 +81,10 @@ app.post("/api/generate-post", async (req, res) => {
       image: { data_url: `data:image/png;base64,${image.data[0].b64_json}` }
     });
   } catch (err) {
-    console.error("API Error:", err);
+    console.error(err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// ✅ 서버 상태 확인용 (Health Check)
-app.get("/api/health", (req, res) => res.json({ ok: true, status: "running" }));
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server ready on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
