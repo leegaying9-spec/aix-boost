@@ -2,63 +2,29 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>확인 및 보내기 - 말만해요</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>분석 중 - 말만해요</title>
     <style>
-        /* 기존 디자인 유지 */
-        :root { --primary: #2563eb; --bg: #f8fafc; }
-        body { margin: 0; background: var(--bg); font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .container { width: 100%; max-width: 480px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .card-news-preview { width: 100%; aspect-ratio: 1/1; background: #eee; border-radius: 15px; margin-bottom: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .card-news-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .loading-text { color: #64748b; font-size: 14px; }
+        body { margin:0; background:#f8fafc; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; font-family:sans-serif; }
+        .loader { border: 6px solid #f3f3f3; border-top: 6px solid #2563eb; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        h2 { color: #1e293b; font-weight: 800; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>완성된 카드뉴스</h2>
-        <div class="card-news-preview" id="imageContainer">
-            <p class="loading-text">AI가 카드뉴스를 생성 중입니다...</p>
-        </div>
-        <div id="resultText" style="margin-bottom: 20px; white-space: pre-wrap; text-align: left;"></div>
-        <button class="btn btn-primary" onclick="location.href='./sns.html'">다음으로</button>
-        <button class="btn" style="background:#e2e8f0;" onclick="location.href='./home.html'">다시 만들기</button>
-    </div>
+    <div class="loader"></div>
+    <h2>AI가 내용을 분석 중입니다...</h2>
+    <p>잠시만 기다려 주세요.</p>
 
     <script>
-        window.onload = async function() {
-            const transcript = localStorage.getItem('rawTranscript');
-            const imageContainer = document.getElementById('imageContainer');
-            const resultText = document.getElementById('resultText');
-
-            if (!transcript) {
-                alert("데이터가 없습니다.");
+        window.onload = () => {
+            const data = localStorage.getItem('rawTranscript');
+            if(!data) {
+                alert("녹음된 데이터가 없습니다. 다시 시도해주세요.");
                 location.href = "./home.html";
-                return;
-            }
-
-            try {
-                // ✅ 서버 API 호출 (server.js의 /api/generate-post)
-                const response = await fetch('/api/generate-post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transcript: transcript })
-                });
-
-                const data = await response.json();
-
-                if (data.ok) {
-                    // 카드뉴스 이미지 표시
-                    imageContainer.innerHTML = `<img src="${data.image.data_url}" alt="Card News">`;
-                    // 텍스트 내용 표시
-                    resultText.innerHTML = `<strong>제목: ${data.post.title}</strong>\n\n${data.post.content}\n\n${data.post.hashtags.join(' ')}`;
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (err) {
-                console.error(err);
-                imageContainer.innerHTML = "<p>이미지 생성에 실패했습니다.</p>";
+            } else {
+                // ✅ 3P.html로 이동하여 카드뉴스 생성 시작
+                setTimeout(() => { location.href = "./3P.html"; }, 1500);
             }
         };
     </script>
