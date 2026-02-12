@@ -71,10 +71,13 @@
   <script>
     let isNavigating = false;
 
+    // ✅ 공통 이동 함수: 경로 일관성 확보
     function go(p){
       if (isNavigating) return;
       isNavigating = true;
       if (window.speechSynthesis) window.speechSynthesis.cancel();
+      
+      // 서버에서 404를 방지하기 위해 가장 확실한 상대 경로 사용
       location.href = p;
     }
 
@@ -83,21 +86,26 @@
 
     document.addEventListener("keydown", (e) => {
       // ✅ Enter 키 입력 시 home.html로 이동
-      if (e.key === "Enter") { e.preventDefault(); go("./home.html"); }
+      if (e.key === "Enter") { 
+        e.preventDefault(); 
+        go("./home.html"); 
+      }
       
-      // ✅ Alt 키 조합 이동 경로 수정
+      // ✅ Alt 키 조합 이동 경로 설정
       if (e.altKey) {
         const map = { 
-          "0":"index.html", // 현재 페이지 (소개)
-          "1":"./home.html",  // 다음 페이지 (말하기)
-          "2":"2P.html", 
-          "3":"3P.html", 
-          "4":"sns.html" 
+          "0":"./index.html", 
+          "1":"./home.html",  
+          "2":"./2P.html", 
+          "3":"./3P.html", 
+          "4":"./sns.html" 
         };
-        if (map[e.key]) { e.preventDefault(); go(map[e.key]); }
+        if (map[e.key]) { 
+          e.preventDefault(); 
+          go(map[e.key]); 
+        }
       }
     });
   </script>
 </body>
 </html>
-
