@@ -63,7 +63,7 @@
       </div>
       <div class="status-bar" id="statusBar">아직 고르지 않았습니다</div>
       <div class="btn-group">
-        <button class="btn btn-back" id="backBtn" onclick="location.href='index.html'">⬅ 이전(Backspace)</button>
+        <button class="btn btn-back" id="backBtn" onclick="location.href='home.html'">⬅ 이전(Backspace)</button>
         <button class="btn btn-home" id="homeBtn" onclick="location.href='index.html'">🏠 처음으로(H)</button>
         <button class="btn btn-next" id="nextBtn">다음 단계로(Enter) ✅</button>
       </div>
@@ -74,11 +74,19 @@
     let selTone = "";
     let selType = "";
 
+    function speak(msg) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(msg);
+      u.lang = "ko-KR";
+      window.speechSynthesis.speak(u);
+    }
+
     document.querySelectorAll('.tone-grid .opt-btn').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.tone-grid .opt-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selTone = btn.getAttribute('data-value');
+        speak(selTone + " 말투를 선택했습니다.");
         updateStatus();
       };
     });
@@ -88,6 +96,7 @@
         document.querySelectorAll('.type-grid .opt-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selType = btn.getAttribute('data-value');
+        speak(selType + " 형식을 선택했습니다.");
         updateStatus();
       };
     });
@@ -96,20 +105,28 @@
       document.getElementById('statusBar').innerText = (selTone || "?") + " / " + (selType || "?");
     }
 
-    // ✅ 다음 단계 실행 함수 (Enter 단축키 공유를 위해 분리)
     function handleNext() {
-      if (!selTone || !selType) return alert("모두 선택해 주세요.");
+      if (!selTone || !selType) {
+        speak("말투와 형식을 모두 선택해 주세요.");
+        return alert("모두 선택해 주세요.");
+      }
       localStorage.setItem("selectedTone", selTone);
       localStorage.setItem("selectedType", selType);
+      
+      // 기존 생성 데이터 초기화
       localStorage.removeItem("generatedPost");
       localStorage.removeItem("generatedImage");
       localStorage.removeItem("generatedType");
+      
       location.href = "3P.html";
     }
 
     document.getElementById('nextBtn').onclick = handleNext;
 
-    window.onload = () => document.body.classList.add("page-show");
+    window.onload = () => {
+      document.body.classList.add("page-show");
+      speak("말투와 형식을 선택하는 단계입니다. 버튼을 누르거나 숫자를 눌러 선택하세요.");
+    };
 
     const helpBtn = document.getElementById("helpBtn");
     const helpPanel = document.getElementById("helpPanel");
@@ -120,26 +137,35 @@
       helpBtn.textContent = helpOpen ? "도움말 ▴" : "도움말 ▾";
     };
 
-    // ✅ 단축키 로직 추가 (Backspace, H, Enter + 기존 Alt 단축키)
     document.addEventListener("keydown", (e) => {
       const key = e.key.toLowerCase();
 
-      // 1. Alt 조합키 (기존 유지)
+      // 1. Alt 조합키 (수정된 파일명 반영)
       if (e.altKey) {
         e.preventDefault();
-        const altMap = { "0":"preview.html", "1":"index.html", "2":"2P.html", "3":"3P.html", "4":"sns.html" };
+        const altMap = { 
+            "0":"index.html", // 소개
+            "1":"home.html",  // 말하기
+            "2":"2P.html", 
+            "3":"3P.html", 
+            "4":"sns.html" 
+        };
         if (altMap[e.key]) location.href = altMap[e.key];
         return;
       }
 
-      // 2. 단일 단축키 추가
+      // 2. 단일 단축키
       if (key === "backspace") {
         e.preventDefault();
-        location.href = "index.html";
+        location.href = "home.html";
       } else if (key === "h") {
         location.href = "index.html";
       } else if (key === "enter") {
         handleNext();
+      } else if (["1", "2", "3"].includes(key)) {
+        document.getElementById("tone" + key).click();
+      } else if (["4", "5"].includes(key)) {
+        document.getElementById("type" + key).click();
       }
     });
   </script>
