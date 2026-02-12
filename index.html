@@ -5,107 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <title>소개 - 말만해요</title>
   <style>
-    :root {
-      --bg:#f8fafc;
-      --primary:#2563eb;
-      --success:#10b981;
-      --text:#0f172a;
-      --sub:#475569;
-    }
+    :root { --bg:#f8fafc; --primary:#2563eb; --success:#10b981; --text:#0f172a; --sub:#475569; }
     *{box-sizing:border-box;font-family:system-ui,-apple-system,"Pretendard",sans-serif;}
-    body{
-      margin:0; min-height:100vh; background:var(--bg);
-      display:flex; justify-content:center; align-items:center;
-      padding:20px;
-    }
-    .wrap{
-      width:100%; max-width:600px; background:#fff; border-radius:24px;
-      padding:40px 30px 35px; text-align:center;
-      box-shadow:0 20px 50px rgba(0,0,0,.08);
-    }
+    body{ margin:0; min-height:100vh; background:var(--bg); display:flex; justify-content:center; align-items:center; padding:20px; }
+    .wrap{ width:100%; max-width:600px; background:#fff; border-radius:24px; padding:40px 30px 35px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.08); }
     .logo{font-size:36px;font-weight:900;color:var(--primary);margin-bottom:10px;}
     .headline{font-size:30px;font-weight:900;color:var(--text);margin:25px 0 15px;line-height:1.3;}
     .desc{font-size:22px;font-weight:700;color:var(--sub);line-height:1.6;margin-bottom:35px;}
     .steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:40px;}
     .step{background:#f1f5f9;border-radius:16px;padding:18px 10px;font-size:20px;font-weight:800;color:#334155;}
     .step span{display:block;font-size:32px;margin-bottom:6px}
-    .start-btn{
-      width:100%; border:none; border-radius:20px; background:var(--success); color:#fff;
-      padding:26px; font-size:30px; font-weight:900; cursor:pointer;
-    }
+    .start-btn{ width:100%; border:none; border-radius:20px; background:var(--success); color:#fff; padding:26px; font-size:30px; font-weight:900; cursor:pointer; }
     .start-btn:active{transform:scale(.98)}
     .start-btn small{display:block;font-size:18px;opacity:.9;margin-top:6px;}
-    .hint{margin-top:16px;font-size:14px;color:#64748b}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="logo">말만해요</div>
-
-    <div class="headline">
-      말만 하면<br>게시글이 완성돼요
-    </div>
-
-    <div class="desc">
-      글쓰기 어렵다면,<br>
-      <b>말로만</b> 이야기해 주세요.<br>
-      AI가 대신 정리해 드려요.
-    </div>
-
+    <div class="headline">말만 하면<br>게시글이 완성돼요</div>
+    <div class="desc">글쓰기 어렵다면,<br><b>말로만</b> 이야기해 주세요.</div>
     <div class="steps">
       <div class="step"><span>🎤</span>말하기</div>
       <div class="step"><span>✍️</span>자동 정리</div>
       <div class="step"><span>📤</span>바로 공유</div>
     </div>
-
-    <button class="start-btn" id="startBtn">
-      시작하기
-      <small>Enter</small>
-    </button>
-
-    <div class="hint">
-      소개 페이지 (첫 화면)
-    </div>
+    <button class="start-btn" id="startBtn">시작하기<small>Enter</small></button>
   </div>
-
   <script>
-    let isNavigating = false;
-
-    // ✅ 공통 이동 함수: 경로 일관성 확보
-    function go(p){
-      if (isNavigating) return;
-      isNavigating = true;
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      
-      // 서버에서 404를 방지하기 위해 가장 확실한 상대 경로 사용
-      location.href = p;
-    }
-
-    // ✅ 시작하기 버튼 클릭 시 home.html로 이동
-    document.getElementById("startBtn").addEventListener("click", () => go("./home.html"));
-
-    document.addEventListener("keydown", (e) => {
-      // ✅ Enter 키 입력 시 home.html로 이동
-      if (e.key === "Enter") { 
-        e.preventDefault(); 
-        go("./home.html"); 
-      }
-      
-      // ✅ Alt 키 조합 이동 경로 설정
-      if (e.altKey) {
-        const map = { 
-          "0":"./index.html", 
-          "1":"./home.html",  
-          "2":"./2P.html", 
-          "3":"./3P.html", 
-          "4":"./sns.html" 
-        };
-        if (map[e.key]) { 
-          e.preventDefault(); 
-          go(map[e.key]); 
-        }
-      }
-    });
+    function go(p){ location.href = p; }
+    document.getElementById("startBtn").onclick = () => go("./home.html");
+    document.onkeydown = (e) => { if(e.key === "Enter") go("./home.html"); };
   </script>
 </body>
 </html>
