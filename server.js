@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-// 용량이 큰 데이터(이미지 등) 처리를 위해 limit 설정
 app.use(express.json({ limit: "10mb" }));
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,38 +21,28 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(cors());
 
 // ✅ 정적 폴더 경로: 현재 위치(Root)로 설정
-const STATIC_DIR = __dirname; 
+const STATIC_DIR = __dirname;
 app.use(express.static(STATIC_DIR));
 
 // ==========================================
-// 🛠 페이지 라우팅 설정 (중요)
+// 🛠 페이지 라우팅 설정
 // ==========================================
-
-// 1. 첫 화면 접속 시 (preview.html이었던 index.html을 보여줌)
 app.get("/", (req, res) => {
   const indexPath = path.join(STATIC_DIR, "index.html");
-  if (fs.existsSync(indexPath)) {
-    return res.sendFile(indexPath);
-  }
+  if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
   res.status(404).send("index.html 파일을 찾을 수 없습니다.");
 });
 
-// 2. '시작하기' 버튼 클릭 시 (home.html로 이동)
 app.get("/home.html", (req, res) => {
   const homePath = path.join(STATIC_DIR, "home.html");
-  if (fs.existsSync(homePath)) {
-    return res.sendFile(homePath);
-  }
+  if (fs.existsSync(homePath)) return res.sendFile(homePath);
   res.status(404).send("home.html 파일을 찾을 수 없습니다. 파일명을 확인해주세요.");
 });
 
-// 3. 기타 HTML 파일들 (2P.html, sns.html 등)에 대한 자동 라우팅
 app.get("/:filename.html", (req, res) => {
   const fileName = `${req.params.filename}.html`;
   const filePath = path.join(STATIC_DIR, fileName);
-  if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
-  }
+  if (fs.existsSync(filePath)) return res.sendFile(filePath);
   res.status(404).send(`${fileName} 파일을 찾을 수 없습니다.`);
 });
 
@@ -63,32 +52,60 @@ app.get("/:filename.html", (req, res) => {
 app.post("/api/generate-post", async (req, res) => {
   try {
     const { transcript } = req.body;
-    if (!transcript) return res.status(400).json({ ok: false, error: "내용이 없습니다." });
+    if (!transcript) {
+      return res.status(400).json({ ok: false, error: "내용이 없습니다." });
+    }
 
-    // 텍스트 생성
+    // 1) 텍스트 생성 (제목/본문/해시태그)
     const completion = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "너는 SNS 게시물 작성자야. JSON 형식으로 제목(title), 내용(content), 해시태그(hashtags) 배열을 만들어줘." },
-        { role: "user", content: transcript }
+        {
+          role: "system",
+          content:
+            "너는 SNS 게시물 작성자야. 반드시 JSON 형식으로만 출력해. 키는 title, content, hashtags(배열)만 사용해.",
+        },
+        { role: "user", content: transcript },
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const postData = JSON.parse(completion.choices[0].message.content);
 
-    // 이미지 생성
+    // 2) 이미지 생성: 카드뉴스 '배경'만 만들기 (텍스트 넣지 말라고 강하게 지시)
+    //    -> 글자는 프론트에서 Canvas로 얹어서 '진짜 카드뉴스'를 만든다.
+    const title = String(postData.title || "").slice(0, 60);
+    const content = String(postData.content || "").slice(0, 180);
+
+    const imagePrompt = `
+Create a clean square background illustration for a Korean SNS card-news.
+Theme: "${title}".
+Context: "${content}".
+
+STYLE:
+- modern minimal, flat/vector 느낌 + 은은한 그라데이션
+- SNS 카드뉴스 배경처럼 여백 충분, 중앙에 넓은 빈 공간(텍스트 올릴 자리)
+- 색감: 밝고 산뜻한 파스텔 톤, 너무 복잡하지 않게
+- simple icons/shapes related to the theme (subtle)
+
+IMPORTANT:
+- NO TEXT, NO LETTERS, NO WORDS, NO LOGOS.
+- Do not draw any writing at all.
+- Keep composition clean and uncluttered.
+`.trim();
+
     const image = await client.images.generate({
       model: "dall-e-3",
-      prompt: `SNS post style image about: ${postData.title}`,
+      prompt: imagePrompt,
       size: "1024x1024",
-      response_format: "b64_json"
+      response_format: "b64_json",
     });
 
     return res.json({
       ok: true,
       post: postData,
-      image: { data_url: `data:image/png;base64,${image.data[0].b64_json}` }
+      // 배경 이미지
+      image: { data_url: `data:image/png;base64,${image.data[0].b64_json}` },
     });
   } catch (err) {
     console.error(err);
