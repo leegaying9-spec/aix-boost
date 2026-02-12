@@ -79,17 +79,17 @@
     }
 
     // ✅ 시작하기 버튼 클릭 시 home.html로 이동
-    document.getElementById("startBtn").addEventListener("click", () => go("home.html"));
+    document.getElementById("startBtn").addEventListener("click", () => go("./home.html"));
 
     document.addEventListener("keydown", (e) => {
       // ✅ Enter 키 입력 시 home.html로 이동
-      if (e.key === "Enter") { e.preventDefault(); go("home.html"); }
+      if (e.key === "Enter") { e.preventDefault(); go("./home.html"); }
       
       // ✅ Alt 키 조합 이동 경로 수정
       if (e.altKey) {
         const map = { 
           "0":"index.html", // 현재 페이지 (소개)
-          "1":"home.html",  // 다음 페이지 (말하기)
+          "1":"./home.html",  // 다음 페이지 (말하기)
           "2":"2P.html", 
           "3":"3P.html", 
           "4":"sns.html" 
@@ -100,3 +100,4 @@
   </script>
 </body>
 </html>
+
