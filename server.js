@@ -18,15 +18,13 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.use(cors());
 
-// ✅ 정적 폴더 경로 설정
 const STATIC_DIR = __dirname;
 app.use(express.static(STATIC_DIR));
 
-// ✅ [경로 수정] 모든 .html 요청을 자동으로 처리
+// 모든 .html 요청 자동 처리
 app.get("/:page.html", (req, res) => {
   const fileName = `${req.params.page}.html`;
   const filePath = path.join(STATIC_DIR, fileName);
-  
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
@@ -34,12 +32,12 @@ app.get("/:page.html", (req, res) => {
   }
 });
 
-// ✅ 첫 화면 설정 (접속하자마자 index.html(=원래 preview) 실행)
+// 첫 화면 설정
 app.get("/", (req, res) => {
   res.sendFile(path.join(STATIC_DIR, "index.html"));
 });
 
-// ✅ [프롬프트 수정] 카드뉴스 스타일 이미지 생성
+// 카드뉴스 스타일 이미지 생성 API
 app.post("/api/generate-post", async (req, res) => {
   try {
     const { transcript } = req.body;
@@ -56,21 +54,9 @@ app.post("/api/generate-post", async (req, res) => {
 
     const postData = JSON.parse(completion.choices[0].message.content);
 
-    // 🎨 DALL-E 3 프롬프트 강화 (카드뉴스 디자인 적용)
     const image = await client.images.generate({
       model: "dall-e-3",
-      prompt: `
-        A professional 'Card News' infographic for Instagram.
-        Main Topic: "${postData.title}".
-        Style: Modern, minimalist, and clean flat design. 
-        Layout: 
-        1. Soft pastel background (light mint or sky blue).
-        2. A clear central area for text that looks like a clean 'notepaper' or 'memo card'.
-        3. Cute 3D isometric icons representing AI and communication around the card.
-        4. High-quality graphic design with no realistic humans.
-        5. Perfect 1:1 square ratio.
-        6. The vibe should be bright, friendly, and professional.
-      `,
+      prompt: `A professional 'Card News' infographic for Instagram. Topic: "${postData.title}". Style: Modern minimalist flat design, soft pastel palette, central 'notepaper' area for text, cute 3D icons about AI, 1:1 square ratio.`,
       size: "1024x1024",
       response_format: "b64_json"
     });
