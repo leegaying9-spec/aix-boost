@@ -295,7 +295,7 @@ const finishRecording = () => {
     localStorage.setItem('rawTranscript', finalText.textContent.trim());
     document.body.classList.remove("page-show");
     // ✅ 다음 단계인 2P.html로 이동
-    setTimeout(() => location.href = "2P.html", 400);
+    setTimeout(() => location.href = "./2P.html", 400);
   });
 };
 
@@ -309,13 +309,13 @@ window.onkeydown = (e) => {
     document.getElementById('redoBtn').click(); 
   }
 
-  // ✅ 단축키 맵 수정 (0: 소개, 1: 현재페이지)
+  // ✅ 단축키 맵 수정 (./ 명시)
   const altMap = { 
-    "0":"index.html", // 구 preview.html
-    "1":"home.html",  // 현재 페이지
-    "2":"2P.html", 
-    "3":"3P.html", 
-    "4":"sns.html" 
+    "0":"./index.html", 
+    "1":"./home.html",  
+    "2":"./2P.html", 
+    "3":"./3P.html", 
+    "4":"./sns.html" 
   };
   if(e.altKey && altMap[e.key]){
     if(isNavigating) return; 
