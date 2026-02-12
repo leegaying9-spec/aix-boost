@@ -64,27 +64,36 @@
     </button>
 
     <div class="hint">
-      현재 페이지는 5500(Live Server)에서 열려야 정상입니다.
+      소개 페이지 (첫 화면)
     </div>
   </div>
 
   <script>
-    // ✅ 3000으로 절대 안 보내고, 현재(5500) 기준으로만 이동
     let isNavigating = false;
 
     function go(p){
       if (isNavigating) return;
       isNavigating = true;
-      window.speechSynthesis?.cancel?.();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       location.href = p;
     }
 
-    document.getElementById("startBtn").addEventListener("click", () => go("index.html"));
+    // ✅ 시작하기 버튼 클릭 시 home.html로 이동
+    document.getElementById("startBtn").addEventListener("click", () => go("home.html"));
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); go("index.html"); }
+      // ✅ Enter 키 입력 시 home.html로 이동
+      if (e.key === "Enter") { e.preventDefault(); go("home.html"); }
+      
+      // ✅ Alt 키 조합 이동 경로 수정
       if (e.altKey) {
-        const map = { "0":"preview.html", "1":"index.html", "2":"2P.html", "3":"3P.html", "4":"sns.html" };
+        const map = { 
+          "0":"index.html", // 현재 페이지 (소개)
+          "1":"home.html",  // 다음 페이지 (말하기)
+          "2":"2P.html", 
+          "3":"3P.html", 
+          "4":"sns.html" 
+        };
         if (map[e.key]) { e.preventDefault(); go(map[e.key]); }
       }
     });
