@@ -20,18 +20,23 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ✅ CORS 설정
 app.use(cors());
 
-// ✅ 정적 폴더 경로 수정: 현재 위치(Root)로 설정
+// ✅ 정적 폴더 경로: 현재 위치(Root)로 설정
 const STATIC_DIR = __dirname; 
-
 app.use(express.static(STATIC_DIR));
 
-// ✅ 메인 페이지 라우트
+// ✅ [수정 포인트] 메인 페이지 라우트: index.html 대신 preview.html을 보냄
 app.get("/", (req, res) => {
-  const indexPath = path.join(STATIC_DIR, "index.html");
-  if (fs.existsSync(indexPath)) {
-    return res.sendFile(indexPath);
+  const previewPath = path.join(STATIC_DIR, "preview.html");
+  
+  if (fs.existsSync(previewPath)) {
+    return res.sendFile(previewPath);
+  } else {
+    // 혹시라도 preview.html이 없으면 index.html이라도 보냄
+    const indexPath = path.join(STATIC_DIR, "index.html");
+    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+    
+    return res.status(404).send("첫 페이지(preview.html)를 찾을 수 없습니다.");
   }
-  return res.status(404).send("index.html 파일을 찾을 수 없습니다. 경로를 확인해주세요.");
 });
 
 // ✅ 게시물 생성 API
@@ -40,7 +45,6 @@ app.post("/api/generate-post", async (req, res) => {
     const { transcript } = req.body;
     if (!transcript) return res.status(400).json({ ok: false, error: "내용이 없습니다." });
 
-    // 1. 텍스트 생성 (간소화된 버전)
     const completion = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -52,7 +56,6 @@ app.post("/api/generate-post", async (req, res) => {
 
     const postData = JSON.parse(completion.choices[0].message.content);
 
-    // 2. 이미지 생성 (선택 사항)
     const image = await client.images.generate({
       model: "dall-e-3",
       prompt: `SNS post style image about: ${postData.title}`,
