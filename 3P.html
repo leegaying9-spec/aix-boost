@@ -3,162 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 게시물 생성 결과</title>
+    <title>결과 확인</title>
     <style>
-        body {
-            font-family: 'Pretendard', sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .container {
-            background-color: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 500px;
-            padding: 25px;
-            text-align: center;
-        }
-
-        h1 { color: #1a73e8; font-size: 1.5rem; margin-bottom: 20px; }
-
-        /* 카드뉴스 이미지 영역 */
-        #result-image {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            border-radius: 15px;
-            object-fit: cover;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            display: none; /* 로딩 전엔 숨김 */
-        }
-
-        .content-box {
-            text-align: left;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .title { font-weight: bold; font-size: 1.2rem; color: #333; margin-bottom: 10px; }
-        .text { font-size: 1rem; color: #555; line-height: 1.6; white-space: pre-wrap; }
-        .hashtags { color: #1a73e8; margin-top: 10px; font-weight: 500; }
-
-        .loading {
-            padding: 50px 0;
-            color: #666;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .btn-home { background-color: #e8f0fe; color: #1a73e8; }
-        .btn-share { background-color: #1a73e8; color: white; }
-        button:hover { opacity: 0.8; }
-
-        /* 로딩 애니메이션 */
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1a73e8;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .result-container { border: 1px solid #ccc; padding: 20px; display: inline-block; border-radius: 10px; }
+        img { max-width: 100%; height: auto; border-radius: 10px; margin-top: 20px; }
+        .loading { font-size: 1.2rem; color: #555; }
+        .btn { padding: 10px 20px; margin-top: 20px; cursor: pointer; border: none; border-radius: 5px; background-color: #007bff; color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>AI 카드뉴스 생성 결과</h1>
-
-    <div id="loading-area" class="loading">
-        <div class="spinner"></div>
-        <p>AI가 멋진 카드뉴스를 디자인하고 있습니다...<br>(약 10~20초 소요)</p>
+    <h1>AI 생성 결과</h1>
+    <div id="loading" class="loading">이미지와 게시글을 생성 중입니다. 잠시만 기다려주세요...</div>
+    
+    <div id="result" class="result-container" style="display:none;">
+        <h2 id="title"></h2>
+        <p id="content"></p>
+        <p id="hashtags" style="color: blue;"></p>
+        <div id="image-container"></div>
+        <br>
+        <button class="btn" onclick="location.href='home.html'">다시 만들기</button>
     </div>
 
-    <div id="result-area" style="display: none;">
-        <img id="result-image" src="" alt="생성된 카드뉴스">
-        
-        <div class="content-box">
-            <div id="res-title" class="title"></div>
-            <div id="res-content" class="text"></div>
-            <div id="res-hashtags" class="hashtags"></div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn-home" onclick="location.href='home.html'">다시 만들기</button>
-            <button class="btn-share" onclick="alert('준비 중인 기능입니다!')">공유하기</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    window.onload = async function() {
-        // 이전 페이지에서 넘겨준 녹음 텍스트 가져오기
-        const transcript = localStorage.getItem('transcript');
-        
-        if (!transcript) {
-            alert('입력된 내용이 없습니다. 첫 페이지로 돌아갑니다.');
-            location.href = 'home.html';
-            return;
-        }
-
-        try {
-            // ✅ Vercel 배포 환경을 고려한 상대 경로 API 호출
-            const response = await fetch('/api/generate-post', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transcript: transcript })
-            });
-
-            const data = await response.json();
-
-            if (data.ok) {
-                // 로딩 숨기고 결과 표시
-                document.getElementById('loading-area').style.display = 'none';
-                document.getElementById('result-area').style.display = 'block';
-
-                // 이미지 표시
-                const imgTag = document.getElementById('result-image');
-                imgTag.src = data.image.data_url;
-                imgTag.style.display = 'block';
-
-                // 텍스트 표시
-                document.getElementById('res-title').innerText = "제목: " + data.post.title;
-                document.getElementById('res-content').innerText = data.post.content;
-                document.getElementById('res-hashtags').innerText = data.post.hashtags.join(' ');
-            } else {
-                throw new Error(data.error);
+    <script>
+        window.onload = async function() {
+            const transcript = localStorage.getItem('transcript');
+            
+            if (!transcript) {
+                alert("녹음된 내용이 없습니다.");
+                location.href = 'home.html';
+                return;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('생성 중 오류가 발생했습니다: ' + error.message);
-            location.href = 'home.html';
-        }
-    };
-</script>
 
+            try {
+                // API 주소를 Vercel 환경에 맞춰 상대 경로로 수정
+                const response = await fetch('/api/generate-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transcript })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').style.display = 'inline-block';
+
+                    document.getElementById('title').innerText = data.post.title;
+                    document.getElementById('content').innerText = data.post.content;
+                    document.getElementById('hashtags').innerText = data.post.hashtags.join(' ');
+
+                    if (data.image && data.image.data_url) {
+                        const img = document.createElement('img');
+                        img.src = data.image.data_url;
+                        document.getElementById('image-container').appendChild(img);
+                    }
+                } else {
+                    alert("생성 실패: " + data.error);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("서버 연결 오류가 발생했습니다.");
+            }
+        };
+    </script>
 </body>
 </html>
