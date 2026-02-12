@@ -96,7 +96,6 @@
       flex:1;
     }
 
-    /* ✅ 네가 쓰던 기존 카드 유지 */
     .post{
       background:var(--card);
       border-radius:18px;
@@ -113,7 +112,6 @@
       margin-bottom:8px;
     }
 
-    /* ✅ avatar는 여기 한 번만 유지(중복 제거) */
     .avatar{
       width:44px;
       height:44px;
@@ -153,7 +151,6 @@
       margin:10px 0;
     }
 
-    /* ✅ 본문(기존) */
     .content{
       font-size:18px;
       font-weight:700;
@@ -162,7 +159,6 @@
       white-space:pre-wrap;
     }
 
-    /* ✅ 추가: 제목/태그 스타일 (스크린샷 느낌) */
     .post-title{
       font-size:18px;
       font-weight:900;
@@ -230,6 +226,7 @@
       background:#fff;
       border-top:2px solid #f1f5f9;
       padding:12px 14px;
+      z-index: 100;
     }
 
     .bbtn{
@@ -240,7 +237,7 @@
       font-size:18px;
       font-weight:900;
       cursor:pointer;
-      background:#64748b;
+      background:#2563eb; 
       color:#fff;
     }
   </style>
@@ -263,7 +260,7 @@
   <main class="feed" id="feed"></main>
 
   <div class="bottom-bar">
-    <button class="bbtn" id="homeBtn">🏠 처음으로</button>
+    <button class="bbtn" id="homeBtn">🏠 다시 말하러 가기</button>
   </div>
 
 </div>
@@ -311,8 +308,6 @@
     localStorage.setItem("sns_posts",JSON.stringify(p));
   }
 
-  // ✅ 3P에서 구조화 저장(title/body/hashtags) 했을 때 우선 사용
-  // ✅ 기존 content만 있는 데이터는 자동 파싱해서 예쁘게 보이게 처리
   function parsePrettyText(raw){
     const text = String(raw || "").trim();
     const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
@@ -356,7 +351,6 @@
       const userName = p.user || extractUserName(p.content || p.body || "");
       const hasImage = !!p.image && String(p.image).startsWith("data:image");
 
-      // ✅ 구조화 우선, 없으면 content 파싱
       let title = (p.title || "").trim();
       let body  = (p.body  || "").trim();
       let hashtags = Array.isArray(p.hashtags) ? p.hashtags : [];
@@ -443,7 +437,8 @@
     p.style.display=p.style.display==="block"?"none":"block";
   };
 
-  document.getElementById("homeBtn").onclick=()=>goPage("index.html");
+  // ✅ 처음으로 버튼을 home.html(말하기 페이지)로 연결
+  document.getElementById("homeBtn").onclick=()=>goPage("home.html");
 
   window.onload=()=>{
     document.body.classList.add("page-show");
@@ -458,7 +453,14 @@
   document.addEventListener("keydown", (e) => {
     if (e.altKey) {
       e.preventDefault();
-      const altMap = {"0":"preview.html","1":"index.html","2":"2P.html","3":"3P.html","4":"sns.html"};
+      // ✅ 단축키 맵 최신화 (0: 소개, 1: 말하기)
+      const altMap = {
+          "0":"index.html", 
+          "1":"home.html", 
+          "2":"2P.html",
+          "3":"3P.html",
+          "4":"sns.html"
+      };
       if (altMap[e.key]) goPage(altMap[e.key]);
     }
   });
