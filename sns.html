@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>들어봐요 - 가상 SNS</title>
+
+  <style>
+    :root{
+      --bg:#f8fafc;
+      --card:#ffffff;
+      --primary:#2563eb;
+      --success:#10b981;
+      --danger:#ef4444;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --soft:#f1f5f9;
+      --softBlue:#eff6ff;
+      --shadow:0 12px 28px rgba(0,0,0,.08);
+    }
+
+    *{box-sizing:border-box;font-family:'Pretendard',system-ui,sans-serif;}
+
+    body{
+      margin:0;
+      background:var(--bg);
+      display:flex;
+      justify-content:center;
+      min-height:100vh;
+      opacity:0;
+      transform:translateY(10px);
+      transition:.4s;
+    }
+    body.page-show{opacity:1;transform:translateY(0);}
+
+    .container{
+      width:100%;
+      max-width:500px;
+      background:#fff;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 0 20px rgba(0,0,0,.05);
+      overflow-x:hidden;
+    }
+
+    /* 상단 */
+    .topbar{
+      padding:15px 20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:2px solid #f1f5f9;
+      background:#fff;
+    }
+    .topbar-title{
+      font-size:28px;
+      font-weight:900;
+      color:var(--primary);
+      margin:0;
+    }
+    .help-btn{
+      background:var(--softBlue);
+      border:2px solid var(--primary);
+      border-radius:12px;
+      color:var(--primary);
+      padding:6px 14px;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .help-panel{
+      display:none;
+      background:#fffbeb;
+      border-bottom:2px solid #bae6fd;
+      padding:18px 20px;
+    }
+    .help-panel p{
+      margin:12px 0;
+      font-size:17px;
+      font-weight:700;
+      color:#000000;
+      line-height:1.6;
+    }
+    .help-panel strong{
+      color:#891dfd;
+      font-weight: 900;
+    }
+
+    /* 피드 */
+    .feed{
+      padding:14px 14px 100px;
+      background:var(--bg);
+      flex:1;
+    }
+
+    /* ✅ 네가 쓰던 기존 카드 유지 */
+    .post{
+      background:var(--card);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+      position:relative;
+    }
+
+    .post-header{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+
+    /* ✅ avatar는 여기 한 번만 유지(중복 제거) */
+    .avatar{
+      width:44px;
+      height:44px;
+      border-radius:12px;
+      background:#00aaff;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      font-weight:900;
+      flex:0 0 auto;
+    }
+
+    .who{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+
+    .username{
+      font-size:16px;
+      font-weight:900;
+      color:var(--text);
+    }
+
+    .time{
+      font-size:13px;
+      font-weight:800;
+      color:var(--muted);
+    }
+
+    .user-divider,
+    .content-divider{
+      height:1px;
+      background:var(--line);
+      margin:10px 0;
+    }
+
+    /* ✅ 본문(기존) */
+    .content{
+      font-size:18px;
+      font-weight:700;
+      color:var(--text);
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    /* ✅ 추가: 제목/태그 스타일 (스크린샷 느낌) */
+    .post-title{
+      font-size:18px;
+      font-weight:900;
+      color:var(--text);
+      text-align:center;
+      margin:2px 0 10px;
+      letter-spacing:-0.2px;
+    }
+
+    .post-body{
+      font-size:18px;
+      font-weight:700;
+      color:var(--text);
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .post-tags{
+      margin-top:12px;
+      text-align:center;
+      font-weight:900;
+      color:var(--text);
+      font-size:16px;
+      white-space:pre-wrap;
+    }
+
+    .actions{
+      display:flex;
+      gap:12px;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:14px;
+      border:2px solid var(--line);
+      background:#fff;
+      font-size:15px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .pill.like.active{
+      border-color:var(--primary);
+      background:var(--softBlue);
+      color:var(--primary);
+    }
+
+    .pill.share{
+      border-color:rgba(16,185,129,.35);
+      background:rgba(16,185,129,.1);
+      color:#065f46;
+    }
+
+    /* 하단 */
+    .bottom-bar{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:0;
+      width:100%;
+      max-width:500px;
+      background:#fff;
+      border-top:2px solid #f1f5f9;
+      padding:12px 14px;
+    }
+
+    .bbtn{
+      width:100%;
+      border:none;
+      border-radius:18px;
+      padding:16px;
+      font-size:18px;
+      font-weight:900;
+      cursor:pointer;
+      background:#64748b;
+      color:#fff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <header class="topbar">
+    <h1 class="topbar-title">📢 들어봐요</h1>
+    <button class="help-btn" id="helpBtn">도움말 ▾</button>
+  </header>
+
+  <div class="help-panel" id="helpPanel">
+    <p>1. <strong>둘러보기</strong>: 이 화면은 다른 사람들의 글을 보는 곳이에요.</p>
+    <p>2. <strong>작성자 확인</strong>: 네모 프로필은 글을 쓴 사람이에요.</p>
+    <p>3. <strong>반응하기</strong>: ❤️는 좋아요, 🔗 공유하기는 글 복사예요.</p>
+  </div>
+
+  <main class="feed" id="feed"></main>
+
+  <div class="bottom-bar">
+    <button class="bbtn" id="homeBtn">🏠 처음으로</button>
+  </div>
+
+</div>
+
+<script>
+  function goPage(p){
+    window.speechSynthesis.cancel();
+    document.body.classList.remove("page-show");
+    setTimeout(()=>location.href=p,300);
+  }
+
+  function extractUserName(text){
+    const patterns = [
+      /^(.+?)(?:입니다|인데|이라고 합니다|라고 합니다|입니다만)[\s\.]/,
+      /^(.+?)(?:입니다|인데)$/
+    ];
+    for(const p of patterns){
+      const m = String(text||"").match(p);
+      if(m) return m[1].trim();
+    }
+    return "사용자";
+  }
+
+  function initials(name){
+    return name ? name[0] : "사";
+  }
+
+  function formatTime(ts){
+    const d=new Date(ts);
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${d.getMonth()+1}월 ${d.getDate()}일 ${hh}시 ${mm}분`;
+  }
+
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g,m=>(
+      {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]
+    ));
+  }
+
+  function loadPosts(){
+    return JSON.parse(localStorage.getItem("sns_posts"))||[];
+  }
+  function savePosts(p){
+    localStorage.setItem("sns_posts",JSON.stringify(p));
+  }
+
+  // ✅ 3P에서 구조화 저장(title/body/hashtags) 했을 때 우선 사용
+  // ✅ 기존 content만 있는 데이터는 자동 파싱해서 예쁘게 보이게 처리
+  function parsePrettyText(raw){
+    const text = String(raw || "").trim();
+    const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
+
+    let title = "";
+    if (lines[0] && lines[0].startsWith("【") && lines[0].endsWith("】")) {
+      title = lines[0].slice(1,-1).trim();
+      lines.shift();
+    }
+
+    let hashtags = [];
+    const last = lines[lines.length-1] || "";
+    if (/#/.test(last)) {
+      const hs = last.split(/\s+/).filter(w=>w.startsWith("#"));
+      if (hs.length && hs.join(" ").length >= last.length * 0.6) {
+        hashtags = hs;
+        lines.pop();
+      }
+    }
+
+    const body = lines.join("\n").trim();
+
+    if (!title) {
+      const first = (body.split("\n")[0] || "").trim();
+      title = first.length > 24 ? first.slice(0,24) + "…" : (first || "게시물");
+    }
+
+    return { title, body, hashtags };
+  }
+
+  function render(){
+    const feed=document.getElementById("feed");
+    const posts=loadPosts().sort((a,b)=>b.id-a.id);
+
+    if(!posts.length){
+      feed.innerHTML=`<div style="text-align:center;font-weight:800;padding-top:50px;color:var(--muted);">아직 게시물이 없어요</div>`;
+      return;
+    }
+
+    feed.innerHTML=posts.map(p=>{
+      const userName = p.user || extractUserName(p.content || p.body || "");
+      const hasImage = !!p.image && String(p.image).startsWith("data:image");
+
+      // ✅ 구조화 우선, 없으면 content 파싱
+      let title = (p.title || "").trim();
+      let body  = (p.body  || "").trim();
+      let hashtags = Array.isArray(p.hashtags) ? p.hashtags : [];
+
+      if (!title || !body) {
+        const parsed = parsePrettyText(p.content || "");
+        if (!title) title = parsed.title;
+        if (!body) body = parsed.body;
+        if (!hashtags.length) hashtags = parsed.hashtags;
+      }
+
+      const tagsText = hashtags.length ? hashtags.join(" ") : "";
+
+      return `
+      <article class="post" data-id="${p.id}">
+        <div class="post-header">
+          <div class="avatar">${escapeHtml(initials(userName))}</div>
+          <div class="who">
+            <div class="username">${escapeHtml(userName)}</div>
+            <div class="time">${formatTime(p.createdAt || p.id)}</div>
+          </div>
+        </div>
+
+        <div class="user-divider"></div>
+
+        <div class="content">
+  ${
+    hasImage
+      ? `
+        <div style="margin-top:10px;">
+          <img src="${p.image}" style="width:100%; border-radius:12px; display:block;">
+        </div>
+      `
+      : `
+        <div class="post-title">【${escapeHtml(title)}】</div>
+        <div class="post-body">${escapeHtml(body)}</div>
+        ${tagsText ? `<div class="post-tags">${escapeHtml(tagsText)}</div>` : ""}
+      `
+  }
+</div>
+
+        <div class="content-divider"></div>
+
+        <div class="actions">
+          <button class="pill like ${p.iLiked?'active':''}" data-action="like">
+            ❤️ <span>${p.likeCount ?? 0}</span>
+          </button>
+          <button class="pill share" data-action="share">
+            🔗 <span>공유하기</span>
+          </button>
+        </div>
+      </article>`;
+    }).join("");
+  }
+
+  document.addEventListener("click",e=>{
+    const btn=e.target.closest("button[data-action]");
+    if(!btn) return;
+    const post=e.target.closest(".post");
+    const id=Number(post.dataset.id);
+    let posts=loadPosts();
+    const idx=posts.findIndex(x=>x.id===id);
+    if(idx<0) return;
+
+    if(btn.dataset.action==="like"){
+      posts[idx].iLiked=!posts[idx].iLiked;
+      posts[idx].likeCount = (posts[idx].likeCount ?? 0) + (posts[idx].iLiked?1:-1);
+      savePosts(posts);
+      render();
+    }
+
+    if(btn.dataset.action==="share"){
+      const post=posts[idx];
+      const textToCopy =
+        post.content ||
+        [post.title ? `【${post.title}】` : "", post.body || "", (post.hashtags||[]).join(" ")].filter(Boolean).join("\n\n");
+      navigator.clipboard.writeText(textToCopy);
+      alert("글이 복사되었습니다.");
+    }
+  });
+
+  document.getElementById("helpBtn").onclick=()=>{
+    const p=document.getElementById("helpPanel");
+    p.style.display=p.style.display==="block"?"none":"block";
+  };
+
+  document.getElementById("homeBtn").onclick=()=>goPage("index.html");
+
+  window.onload=()=>{
+    document.body.classList.add("page-show");
+    render();
+
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance("다른 사람들의 이야기를 들어보세요.");
+    u.lang = "ko-KR";
+    window.speechSynthesis.speak(u);
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if (e.altKey) {
+      e.preventDefault();
+      const altMap = {"0":"preview.html","1":"index.html","2":"2P.html","3":"3P.html","4":"sns.html"};
+      if (altMap[e.key]) goPage(altMap[e.key]);
+    }
+  });
+</script>
+</body>
+</html>

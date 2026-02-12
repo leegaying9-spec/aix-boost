@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>확인 및 보내기 - 말만해요</title>
+
+  <style>
+    :root { --bg:#f1f5f9; --primary:#2563eb; --secondary:#64748b; --text:#0f172a; --share:#10b981; }
+    * { box-sizing:border-box; font-family:'Pretendard',system-ui,sans-serif; }
+    body{ margin:0; background:var(--bg); display:flex; justify-content:center; min-height:100vh; opacity:0; transform:translateY(10px); transition:.4s ease; }
+    body.page-show{ opacity:1; transform:translateY(0); }
+    .container{ display:flex; flex-direction:column; width:100%; max-width:600px; background:#fff; min-height:100vh; }
+    .topbar{ padding:15px 20px; border-bottom:2px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; background:#fff; }
+    .topbar-title{ font-size:28px; font-weight:900; color:var(--primary); margin:0; }
+    .help-btn{ background:#eff6ff; border:2px solid var(--primary); border-radius:12px; color:var(--primary); padding:6px 14px; font-size:16px; font-weight:900; cursor:pointer; }
+    .help-panel{ display:none; background:#ecfeff; border-bottom:2px solid #bae6fd; padding:16px 20px; color:#0f172a; }
+    .help-panel p{ margin:6px 0; font-size:16px; font-weight:800; line-height:1.5; }
+    .stepper{ display:flex; justify-content:space-around; padding:15px; border-bottom:1px solid #f1f5f9; }
+    .step{ display:flex; flex-direction:column; align-items:center; opacity:.3; font-size:14px; font-weight:bold; }
+    .step.active{ opacity:1; color:var(--primary); }
+    .step-icon{ width:30px; height:30px; border-radius:50%; background:#e2e8f0; display:grid; place-items:center; margin-bottom:5px; }
+    .step.active .step-icon{ background:var(--primary); color:#fff; }
+
+    .content{ padding:20px; flex:1; display:flex; flex-direction:column; }
+    .guide-msg{ font-size:30px; font-weight:800; color:#1e293b; text-align:center; margin:10px 0 20px; }
+
+    .previewBox{
+      background:#f8fafc; border:3px solid #cbd5e1; border-radius:20px; padding:20px;
+      width:100%; min-height:400px; margin-bottom:15px;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+    }
+
+    .loading-wrap{ text-align:center; }
+    .timer-text{ font-size:42px; font-weight:900; color:var(--primary); margin:15px 0; letter-spacing:-1px; }
+    .loading-sub{ font-size:18px; color:var(--secondary); font-weight:600; }
+
+    .result-wrap{ width:100%; display:none; }
+    .result-text{
+      font-size:24px; line-height:1.6; color:#1e293b; margin-bottom:20px; font-weight:700;
+      background:#fff; padding:15px; border-radius:12px; border-left:5px solid var(--primary);
+      box-shadow:0 2px 8px rgba(0,0,0,.05);
+      white-space:pre-wrap;
+    }
+    .result-img{
+      width:100%; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.1);
+      display:none; height:auto; max-width:100%;
+    }
+
+    .audio-controls{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px; }
+    .audio-btn{ padding:18px; border-radius:12px; border:none; background:var(--primary); color:white; font-size:20px; font-weight:800; cursor:pointer; }
+    .status-msg-box{ background:#f1f5f9; border-radius:15px; padding:15px; font-size:20px; font-weight:800; color:var(--primary); border:2px solid #e2e8f0; text-align:center; }
+    .share-btn{ width:100%; height:85px; border-radius:20px; border:none; background:var(--share); color:white; font-size:26px; font-weight:900; cursor:pointer; margin-top:20px; transition:transform .1s; }
+    .share-btn:active{ transform:scale(.98); }
+
+    .nav-btns{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+    .nav-btn{ padding:18px; border-radius:18px; border:none; font-size:20px; font-weight:900; cursor:pointer; background:#94a3b8; color:#fff; }
+    .nav-btn.home{ background:#64748b; }
+    .nav-btn small{ display:block; font-size:12px; opacity:.9; margin-top:4px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="topbar">
+      <h1 class="topbar-title">말만해요</h1>
+      <button class="help-btn" id="helpBtn">도움말 ▾</button>
+    </header>
+
+    <div class="help-panel" id="helpPanel">
+      <p>1. 완성된 결과를 확인하세요.</p>
+      <p>2. 글 모드에서는 내용 박스를 눌러 수정할 수 있어요.</p>
+      <p>3. 공유하기를 누르면 게시판으로 이동해요.</p>
+    </div>
+
+    <nav class="stepper">
+      <div class="step"><div class="step-icon">1</div>말하기</div>
+      <div class="step"><div class="step-icon">2</div>선택</div>
+      <div class="step active"><div class="step-icon">3</div>확인/보내기</div>
+    </nav>
+
+    <main class="content">
+      <div class="guide-msg">게시물 확인 및 보내기</div>
+
+      <div class="previewBox" id="previewBox">
+        <div id="loadingUI" class="loading-wrap">
+          <div style="font-size:60px; margin-bottom:10px;">🎨</div>
+          <div style="font-weight:900; font-size:26px; color:var(--text);">생성 중이에요!</div>
+          <div id="timerDisplay" class="timer-text">약 1분 30초 남음</div>
+          <div class="loading-sub">AI가 게시물을 만들고 있어요 :)</div>
+        </div>
+
+        <div id="resultUI" class="result-wrap">
+          <div id="textContent" class="result-text" contenteditable="true"></div>
+          <img id="imageContent" class="result-img" />
+        </div>
+      </div>
+
+      <div class="audio-controls">
+        <button class="audio-btn" id="playBtn">🔊 듣기</button>
+        <button class="audio-btn" id="replayBtn">↻ 다시듣기</button>
+      </div>
+
+      <div class="status-msg-box" id="statusMsg">게시물을 생성 중입니다...</div>
+      <button class="share-btn" id="shareBtn">📤 공유하기(S)</button>
+
+      <div class="nav-btns">
+        <button class="nav-btn" id="backBtn">⬅ 이전<small>Backspace</small></button>
+        <button class="nav-btn home" id="homeBtn">🏠 처음으로<small>H</small></button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ✅ API 고정 (다른 엔드포인트/예시 로직 없음)
+    const API_ENDPOINT = "http://localhost:3000/api/generate-post";
+
+    const previewBox = document.getElementById("previewBox");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const loadingUI = document.getElementById("loadingUI");
+    const resultUI = document.getElementById("resultUI");
+    const textContent = document.getElementById("textContent");
+    const imageContent = document.getElementById("imageContent");
+    const statusMsg = document.getElementById("statusMsg");
+    let LAST_POST_TEXT = "";
+    let LAST_IMAGE_URL = "";
+
+
+    let timeLeft = 90;
+    const countdown = setInterval(() => {
+      timeLeft--;
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      timerDisplay.innerText = min > 0 ? `약 ${min}분 ${sec}초 남음` : `약 ${sec}초 남음`;
+      if (timeLeft <= 0) clearInterval(countdown);
+    }, 1000);
+
+    function speak(m) {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(m);
+        u.lang = "ko-KR";
+        window.speechSynthesis.speak(u);
+      } catch {}
+    }
+
+    const safe = (s) => String(s || "").replace(/\s+/g, " ").trim();
+
+    function formatPostToText(post) {
+      if (!post) return "";
+      const lines = [];
+      if (post.title) lines.push(`【${safe(post.title)}】`);
+      if (post.hook) lines.push(safe(post.hook));
+      if (post.topic) lines.push(`\n주제: ${safe(post.topic)}`);
+
+      if (Array.isArray(post.key_points) && post.key_points.length) {
+        lines.push("\n핵심 요약");
+        post.key_points.forEach((p) => lines.push(`- ${safe(p)}`));
+      }
+
+      if (Array.isArray(post.details) && post.details.length) {
+        post.details.forEach((sec) => {
+          if (!sec) return;
+          if (sec.heading) lines.push(`\n${safe(sec.heading)}`);
+          if (Array.isArray(sec.bullets)) {
+            sec.bullets.forEach((b) => lines.push(`• ${safe(b)}`));
+          }
+        });
+      }
+
+      if (Array.isArray(post.what_is_unknown) && post.what_is_unknown.length) {
+        const unknown = post.what_is_unknown.map(safe).filter(Boolean);
+        if (unknown.length) {
+          lines.push("\n언급이 없어 확정 불가");
+          unknown.forEach((u) => lines.push(`- ${u}`));
+        }
+      }
+
+      if (Array.isArray(post.hashtags) && post.hashtags.length) {
+        lines.push("\n" + post.hashtags.map((h) => (String(h).startsWith("#") ? h : "#" + h)).join(" "));
+      }
+
+      return lines.join("\n").trim();
+    }
+
+    function showResult(type, postText, imgUrl) {
+      loadingUI.style.display = "none";
+      resultUI.style.display = "block";
+      previewBox.style.justifyContent = "flex-start";
+
+      if (type === "image") {
+        textContent.style.display = "none";
+        imageContent.style.display = "block";
+        imageContent.src = imgUrl || "";
+        statusMsg.innerText = "이미지 게시물이 생성되었습니다!";
+      } else {
+        imageContent.style.display = "none";
+        textContent.style.display = "block";
+        textContent.innerText = postText || "";
+        statusMsg.innerText = "글자를 눌러서 수정할 수 있어요!";
+      }
+
+      speak("게시물이 완성되었습니다.");
+    }
+
+    async function generateOnThisPage() {
+      const transcript = localStorage.getItem("rawTranscript") || "";
+      const typeKor = localStorage.getItem("selectedType") || "글자";
+      const outputType = typeKor === "이미지" ? "image" : "text";
+
+      statusMsg.innerText = "게시물을 생성 중입니다...";
+
+      try {
+        const resp = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript }),
+        });
+
+        const ct = resp.headers.get("content-type") || "";
+
+        // ✅ 여기서 404면 서버 라우트가 없는 것
+        if (!resp.ok) {
+          const t = await resp.text().catch(() => "");
+          console.error("❌ API HTTP error:", resp.status, ct, t.slice(0, 400));
+          throw new Error(`API가 ${resp.status}를 반환했어. (서버에 /api/generate-post 라우트가 있는지 확인 필요)`);
+        }
+
+        if (!ct.includes("application/json")) {
+          const t = await resp.text().catch(() => "");
+          console.error("❌ Not JSON:", resp.status, ct, t.slice(0, 400));
+          throw new Error(`서버가 JSON이 아니라 ${ct} 를 반환했어`);
+        }
+
+        const data = await resp.json();
+        console.log("✅ API response:", data);
+
+        if (!data.ok) throw new Error(data.error || "Server returned ok=false");
+
+        const postText = (typeof data.post === "string") ? data.post : formatPostToText(data.post);
+
+const imgUrl = data.image?.data_url ? data.image.data_url : "";
+
+// ✅ 화면 표시용으로만 들고 있고, 저장소에는 텍스트만 저장 (용량 초과 방지)
+LAST_POST_TEXT = postText;
+LAST_IMAGE_URL = imgUrl;
+
+localStorage.setItem("generatedType", outputType);
+localStorage.setItem("generatedPost", postText);
+
+// ✅ 절대 storage에 base64 저장하지 않음 (quota 초과 원인)
+sessionStorage.removeItem("generatedImage");
+localStorage.removeItem("generatedImage");
+
+
+
+        clearInterval(countdown);
+
+        // 선택이 글자면 글자만 보여주고, 이미지면 이미지만 보여줌
+        if (outputType === "image") showResult("image", postText, imgUrl);
+        else showResult("text", postText, "");
+
+      } catch (e) {
+        alert("실패: " + e.message);
+        timerDisplay.innerText = "연결 오류";
+        statusMsg.innerText = "오류가 발생했습니다.";
+      }
+    }
+
+    document.getElementById("backBtn").onclick = () => location.href = "2P.html";
+    document.getElementById("homeBtn").onclick = () => location.href = "index.html";
+    document.getElementById("helpBtn").onclick = () => {
+      const p = document.getElementById("helpPanel");
+      p.style.display = p.style.display === "block" ? "none" : "block";
+    };
+
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      const isEditing = e.target?.isContentEditable || tag === "input" || tag === "textarea";
+      if (isEditing) return;
+
+      if (e.key === "Backspace") { e.preventDefault(); location.href = "2P.html"; }
+      if (e.key.toLowerCase() === "h") { e.preventDefault(); location.href = "index.html"; }
+      if (e.key.toLowerCase() === "s") { e.preventDefault(); document.getElementById("shareBtn").click(); }
+    });
+
+    window.onload = () => {
+      document.body.classList.add("page-show");
+      generateOnThisPage();
+    };
+    document.getElementById("shareBtn").onclick = async () => {
+  try {
+    const posts = JSON.parse(localStorage.getItem("sns_posts") || "[]");
+
+    const type = localStorage.getItem("generatedType") || "text";
+
+    const content =
+      type === "text"
+        ? (textContent?.innerText || LAST_POST_TEXT || "")
+        : (LAST_POST_TEXT || "");
+
+    let imageToSave = "";
+
+    if (type === "image" && LAST_IMAGE_URL) {
+      imageToSave = await compressDataUrl(LAST_IMAGE_URL, 900, 0.72);
+
+      // 너무 크면 저장 안함
+      if (imageToSave.length > 1_200_000) {
+        imageToSave = "";
+      }
+    }
+
+    posts.push({
+      id: Date.now(),
+      user: "사용자",
+      content,
+      image: imageToSave,
+      likeCount: 0,
+      iLiked: false,
+    });
+
+    localStorage.setItem("sns_posts", JSON.stringify(posts));
+
+    location.href = "sns.html";
+
+  } catch (e) {
+    console.error("❌ 공유 실패:", e);
+    alert("공유 중 오류 발생");
+  }
+};
+
+    function compressDataUrl(dataUrl, maxW = 900, quality = 0.72) {
+  return new Promise((resolve) => {
+    if (!dataUrl || !dataUrl.startsWith("data:image/")) return resolve("");
+
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxW / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // PNG → JPEG로 바꾸면 용량이 확 줄어듦
+      const out = canvas.toDataURL("image/jpeg", quality);
+      resolve(out);
+    };
+    img.onerror = () => resolve("");
+    img.src = dataUrl;
+  });
+}
+
+  </script>
+</body>
+</html>
