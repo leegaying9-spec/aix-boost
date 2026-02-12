@@ -182,7 +182,6 @@ function initRecognition() {
     };
 
     recognition.onend = () => {
-        // 녹음 중이고 일시정지가 아닌데 갑자기 종료된 경우에만 재시작
         if(isRecording && !isPaused) {
             try { recognition.start(); } catch(err) {}
         }
@@ -238,7 +237,6 @@ function updateTimerDisplay(){
   recordTimer.textContent = `${m}:${s}`;
 }
 
-// ✅ 재녹음 시 데이터를 완전히 초기화하는 함수
 function resetAll(callback){
   isRecording = false; 
   isPaused = false; 
@@ -253,13 +251,11 @@ function resetAll(callback){
   pauseTxt.textContent = "일시정지"; 
   pauseIcon.textContent = "⏸";
   
-  // 인식 엔진 연결 해제 및 재시작 준비
   if (recognition) {
-    recognition.onend = null; // 자동 재시작 방지
+    recognition.onend = null; 
     recognition.stop();
   }
   
-  // 엔진이 완전히 멈추고 자원을 해제할 시간을 줌
   setTimeout(() => {
     initRecognition(); 
     if(callback) callback(); 
@@ -267,7 +263,7 @@ function resetAll(callback){
 }
 
 document.getElementById('redoBtn').onclick = () => {
-  window.speechSynthesis.cancel(); // 안내 음성 겹침 방지
+  window.speechSynthesis.cancel(); 
   speak("처음부터 다시 녹음합니다.", () => {
     resetAll(() => { 
         startRecording(); 
@@ -298,6 +294,7 @@ const finishRecording = () => {
   speak("녹음 완료되었습니다.", () => {
     localStorage.setItem('rawTranscript', finalText.textContent.trim());
     document.body.classList.remove("page-show");
+    // ✅ 다음 단계인 2P.html로 이동
     setTimeout(() => location.href = "2P.html", 400);
   });
 };
@@ -312,7 +309,14 @@ window.onkeydown = (e) => {
     document.getElementById('redoBtn').click(); 
   }
 
-  const altMap = { "0":"preview.html", "1":"index.html", "2":"2P.html", "3":"3P.html", "4":"sns.html" };
+  // ✅ 단축키 맵 수정 (0: 소개, 1: 현재페이지)
+  const altMap = { 
+    "0":"index.html", // 구 preview.html
+    "1":"home.html",  // 현재 페이지
+    "2":"2P.html", 
+    "3":"3P.html", 
+    "4":"sns.html" 
+  };
   if(e.altKey && altMap[e.key]){
     if(isNavigating) return; 
     isNavigating = true;       
